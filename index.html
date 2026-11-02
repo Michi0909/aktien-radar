@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aktien-Radar">
+<meta name="theme-color" content="#0e1116">
+<title>Aktien-Radar</title>
+<style>
+:root{
+  --bg:#f4f5f2;--panel:#ffffff;--panel2:#eceee9;--line:#dcdfd8;
+  --ink:#16191d;--ink2:#555c64;--ink3:#8a9098;
+  --acc:#0f7b5f;--acc-soft:#d8efe6;--up:#0f7b5f;--down:#c0392b;
+  --warn:#9a6a00;--warn-soft:#f6ecd2;--fund:#3b5bdb;--fund-soft:#e1e7fb;
+  --on-acc:#fff;--r:14px;--shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1116;--panel:#161b22;--panel2:#1f2630;--line:#2a323d;
+  --ink:#e8ebef;--ink2:#a3acb7;--ink3:#6f7884;
+  --acc:#3ddc97;--acc-soft:#123a2c;--up:#3ddc97;--down:#ff6b5e;
+  --warn:#f2c14e;--warn-soft:#3a2f12;--fund:#8ea8ff;--fund-soft:#1d2645;
+  --on-acc:#06261a;--shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#0e1116;--panel:#161b22;--panel2:#1f2630;--line:#2a323d;
+  --ink:#e8ebef;--ink2:#a3acb7;--ink3:#6f7884;
+  --acc:#3ddc97;--acc-soft:#123a2c;--up:#3ddc97;--down:#ff6b5e;
+  --warn:#f2c14e;--warn-soft:#3a2f12;--fund:#8ea8ff;--fund-soft:#1d2645;--on-acc:#06261a;--shadow:none;}
+[hidden]{display:none!important}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom));min-height:100vh}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+header{padding:14px 16px 6px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+header h1{margin:0;font-size:22px;letter-spacing:-.02em}
+header h1 span{color:var(--acc)}
+.stand{font-size:12px;color:var(--ink3);text-align:right}
+main{max-width:760px;margin:0 auto;padding:0 16px}
+.view{display:none}.view.on{display:block}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin:18px 0 8px;font-weight:600}
+
+/* Tabs unten */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);
+  display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:20}
+nav.tabs button{flex:1;background:none;border:0;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;
+  font-size:11px;color:var(--ink3);cursor:pointer}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav.tabs button.on{color:var(--acc)}
+
+/* Markt-Chips */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none;margin:0 -16px;padding-left:16px;padding-right:16px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Filter */
+.filter{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:4px 14px;box-shadow:var(--shadow)}
+.frow{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:0}
+.frow label{font-size:14px}
+.frow .val{font-size:14px;font-weight:600;min-width:64px;text-align:right}
+.frow input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--acc)}
+.frow .hint{grid-column:1/-1;font-size:12px;color:var(--ink3);margin-top:-2px}
+.switch{position:relative;width:46px;height:28px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--line);border-radius:99px;transition:.2s}
+.switch span:before{content:"";position:absolute;width:22px;height:22px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked+span{background:var(--acc);border-color:var(--acc)}
+.switch input:checked+span:before{transform:translateX(18px)}
+details.fbox>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-weight:600}
+details.fbox>summary::-webkit-details-marker{display:none}
+details.fbox>summary .sum{font-weight:400;font-size:13px;color:var(--ink2);text-align:right}
+.toolbar{display:flex;gap:8px;align-items:center;margin:12px 0 8px}
+.toolbar input[type=search]{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 12px}
+.toolbar select{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 8px;max-width:46%}
+.count{font-size:13px;color:var(--ink2);margin:4px 2px 8px}
+
+/* Karten */
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow);cursor:pointer}
+.card .top{display:flex;justify-content:space-between;gap:10px}
+.card .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .sub{font-size:12px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .px{text-align:right;flex:none}
+.card .px b{display:block;font-size:15px}
+.up{color:var(--up)}.down{color:var(--down)}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:10px}
+.metric{background:var(--panel2);border-radius:9px;padding:6px 8px;min-width:0}
+.metric small{display:block;font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.metric b{font-size:14px;white-space:nowrap;display:block;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:400px){.metric b{font-size:13px}.metric{padding:6px 7px}}
+.metric.hot b{color:var(--acc)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:12px;border-radius:6px;padding:2px 8px;background:var(--panel2);color:var(--ink2)}
+.tag.fund{background:var(--fund-soft);color:var(--fund)}
+.tag.acc{background:var(--acc-soft);color:var(--acc)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.score{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:22px;border-radius:6px;font-size:12px;font-weight:700;background:var(--acc-soft);color:var(--acc);margin-left:6px;vertical-align:1px}
+.more{display:block;width:100%;margin:12px 0;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+
+/* Hinweisboxen */
+.note{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:12px 14px;margin:10px 0;font-size:14px}
+.note.warn{border-left-color:var(--warn)}
+.note p{margin:6px 0}
+.empty{text-align:center;color:var(--ink2);padding:36px 12px}
+
+/* Segment */
+.seg{display:flex;background:var(--panel2);border-radius:10px;padding:3px;margin:8px 0 12px}
+.seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-size:14px;cursor:pointer;color:var(--ink2)}
+.seg button.on{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.fund-row{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:5px 0;border-top:1px dashed var(--line)}
+.fund-row:first-child{border-top:0}
+.fund-row span:last-child{text-align:right;flex:none;color:var(--ink2)}
+details.fonds{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px;box-shadow:var(--shadow)}
+details.fonds>summary{list-style:none;cursor:pointer;padding:12px 14px}
+details.fonds>summary::-webkit-details-marker{display:none}
+details.fonds .body{padding:0 14px 12px}
+details.fonds h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin:10px 0 4px}
+.lnk{color:var(--fund);text-decoration:none;cursor:pointer}
+
+/* Watchlist */
+.addbox{display:flex;gap:8px;margin:8px 0 12px}
+.addbox input::placeholder{text-transform:none}
+.addbox input{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 12px;text-transform:uppercase}
+.btn{border:0;background:var(--acc);color:var(--on-acc);border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:none;color:var(--down);border:1px solid var(--line)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.btnrow .btn{flex:1}
+.wl-edit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.wl-edit label{font-size:12px;color:var(--ink3);display:flex;flex-direction:column;gap:3px}
+.wl-edit input,.wl-edit textarea{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 10px;width:100%}
+.wl-edit .full{grid-column:1/-1}
+
+/* Detail-Sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--bg);z-index:41;border-radius:18px 18px 0 0;
+  padding:8px 16px calc(20px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .25s ease;max-width:760px;margin:0 auto}
+.sheet.on{transform:none}.sheet-bg.on{display:block}
+.grip{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.sheet h3{margin:0;font-size:19px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.kv div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.kv small{display:block;font-size:11px;color:var(--ink3)}
+.kv b{font-size:15px}
+.range{position:relative;height:6px;background:var(--panel2);border-radius:3px;margin:22px 4px 6px}
+.range i{position:absolute;top:-5px;width:16px;height:16px;border-radius:50%;background:var(--acc);border:3px solid var(--bg);transform:translateX(-50%)}
+.range-l{display:flex;justify-content:space-between;font-size:12px;color:var(--ink3)}
+.info-dl dt{font-weight:600;margin-top:10px}
+.info-dl dd{margin:2px 0 0;color:var(--ink2);font-size:14px}
+.foot{font-size:12px;color:var(--ink3);margin:24px 0 8px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Aktien<span>·</span>Radar</h1>
+  <div class="stand" id="stand">lädt …</div>
+</header>
+
+<main>
+  <!-- RADAR -->
+  <section class="view on" id="v-radar">
+    <div class="chips" id="maerkte"></div>
+    <div class="filter">
+      <details class="fbox" id="fbox">
+        <summary>Filter <span class="sum" id="fsum"></span></summary>
+        <div class="frow">
+          <label for="f-kgv">KGV höchstens</label><span class="val num" id="f-kgv-v"></span>
+          <input type="range" id="f-kgv" min="4" max="60" step="1">
+          <div class="hint">Kurs-Gewinn-Verhältnis der letzten 12 Monate. Aktien mit Verlust (kein KGV) fallen raus.</div>
+        </div>
+        <div class="frow">
+          <label for="f-vol">Volumen-Trend mindestens</label><span class="val num" id="f-vol-v"></span>
+          <input type="range" id="f-vol" min="0.5" max="3" step="0.05">
+          <div class="hint">Ø-Handelsvolumen der letzten 10 Tage im Vergleich zu 3 Monaten. 1,5× = 50 % mehr Handel als üblich.</div>
+        </div>
+        <div class="frow">
+          <label for="f-mk">Börsenwert mindestens</label><span class="val num" id="f-mk-v"></span>
+          <input type="range" id="f-mk" min="0" max="10" step="1">
+        </div>
+        <div class="frow">
+          <label for="f-fonds">Nur mit Fondskäufen</label>
+          <label class="switch"><input type="checkbox" id="f-fonds"><span></span></label>
+          <div class="hint">Nur US-Aktien, die laut letzter 13F-Meldung von beobachteten Fonds gekauft wurden.</div>
+        </div>
+        <div class="frow">
+          <span></span><button class="btn sec" id="f-reset" type="button">Filter zurücksetzen</button>
+        </div>
+      </details>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Name oder Ticker suchen" autocomplete="off">
+      <select id="sort" aria-label="Sortierung">
+        <option value="score">Score</option>
+        <option value="vt">Volumen-Trend</option>
+        <option value="vh">Volumen heute</option>
+        <option value="kgv">KGV niedrig</option>
+        <option value="ums">Umsatz €/Tag</option>
+        <option value="c">Tagesveränderung</option>
+        <option value="mk">Börsenwert</option>
+      </select>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="hinweise"></div>
+    <div class="list" id="liste"></div>
+    <button class="more" id="mehr" type="button" hidden>Mehr anzeigen</button>
+  </section>
+
+  <!-- FONDS -->
+  <section class="view" id="v-fonds">
+    <div class="note warn" id="fonds-info"></div>
+    <div class="seg" id="fseg">
+      <button class="on" data-m="top" type="button">Gemeinsame Käufe</button>
+      <button data-m="fonds" type="button">Pro Fonds</button>
+    </div>
+    <div id="fonds-liste"></div>
+  </section>
+
+  <!-- WATCHLIST -->
+  <section class="view" id="v-watch">
+    <form class="addbox" id="wl-form" autocomplete="off">
+      <input id="wl-in" list="wl-dl" placeholder="Ticker, z. B. OMV.VI, SAP.DE, AAPL" enterkeyhint="done">
+      <datalist id="wl-dl"></datalist>
+      <button class="btn" type="submit">Hinzufügen</button>
+    </form>
+    <div class="list" id="wl-liste"></div>
+    <h2>Sicherung</h2>
+    <div class="note">
+      <p>Die Watchlist liegt nur in diesem Browser. Wenn du Browserdaten löschst, ist sie weg – sichere sie vorher als Datei.</p>
+      <p class="num" id="wl-backup-info"></p>
+    </div>
+    <div class="btnrow">
+      <button class="btn" id="wl-export" type="button">Als Datei sichern</button>
+      <button class="btn sec" id="wl-import-btn" type="button">Datei laden</button>
+      <input type="file" id="wl-import" accept=".json,application/json" hidden>
+    </div>
+  </section>
+
+  <!-- INFO -->
+  <section class="view" id="v-info">
+    <h2>Datenstand</h2>
+    <div class="note" id="info-stand"></div>
+    <h2>So liest du die Kennzahlen</h2>
+    <dl class="info-dl">
+      <dt>KGV</dt><dd>Kurs geteilt durch Gewinn je Aktie der letzten 12 Monate. Niedrig heißt „günstig im Verhältnis zum Gewinn“ – kann aber auch bedeuten, dass der Markt sinkende Gewinne erwartet. Banken, Versicherer und Rohstoffwerte haben oft generell niedrige KGVs.</dd>
+      <dt>Fwd-KGV</dt><dd>Wie KGV, aber mit dem von Analysten erwarteten Gewinn der nächsten 12 Monate. Liegt es deutlich über dem KGV, rechnet der Markt mit sinkenden Gewinnen.</dd>
+      <dt>Volumen-Trend</dt><dd>Ø-Handelsvolumen der letzten 10 Tage ÷ Ø der letzten 3 Monate. Über 1 heißt: Gerade wird mehr gehandelt als üblich. Das zeigt Interesse, sagt aber nicht, ob gekauft oder verkauft wird – dafür Kursverlauf mitbetrachten.</dd>
+      <dt>Volumen heute</dt><dd>Volumen des letzten Handelstags ÷ 3-Monats-Schnitt. Einzelne Ausreißer entstehen oft durch Quartalszahlen, Indexänderungen oder Verfallstage.</dd>
+      <dt>Umsatz €/Tag</dt><dd>Ø-Handelsvolumen × Kurs, in Euro umgerechnet. Zeigt, wie viel Geld täglich in der Aktie bewegt wird.</dd>
+      <dt>Score (0–100)</dt><dd>Einfache Rangfolge über alle Aktien: 40 % niedriges KGV, 40 % hoher Volumen-Trend, 20 % Anzahl kaufender Fonds (ab 3 Fonds voll). Er ist ein Sortierhilfe, keine Bewertung.</dd>
+      <dt>Fondskäufe (13F)</dt><dd>US-Fonds mit über 100 Mio. $ müssen ihre US-Aktienbestände quartalsweise bei der SEC melden, bis zu 45 Tage nach Quartalsende. Verglichen werden die letzten beiden Meldungen: „neu“ = neue Position, „+x %“ = Stückzahl erhöht. Optionen sind ausgeklammert. Europäische Aktien tauchen hier nur auf, wenn sie in den USA gehandelt werden.</dd>
+    </dl>
+    <h2>Wichtig</h2>
+    <div class="note warn"><p>Die App filtert und sortiert öffentliche Daten. Sie ist keine Anlageberatung und keine Kaufempfehlung. Daten von Yahoo Finance sind inoffiziell und können fehlerhaft oder verzögert sein – vor einer Entscheidung immer bei einer zweiten Quelle prüfen.</p></div>
+    <h2>Darstellung</h2>
+    <div class="seg" id="theme-seg">
+      <button data-t="auto" type="button">Automatisch</button>
+      <button data-t="light" type="button">Hell</button>
+      <button data-t="dark" type="button">Dunkel</button>
+    </div>
+    <p class="foot">Aktien-Radar · Version 1</p>
+  </section>
+</main>
+
+<nav class="tabs" id="tabs">
+  <button class="on" data-v="radar" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/></svg>Radar</button>
+  <button data-v="fonds" type="button"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10m4 11V10m6 11V10m4 11V10M2 10l10-6 10 6"/></svg>Fonds</button>
+  <button data-v="watch" type="button"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Watchlist</button>
+  <button data-v="info" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Info</button>
+</nav>
+
+<div class="sheet-bg" id="sheet-bg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grip"></div><div id="sheet-in"></div></div>
+
+<script>
+"use strict";
+/* ---------- Hilfsfunktionen ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LOC = "de-AT";
+const nf = (x, d = 2) => x == null ? "–" : x.toLocaleString(LOC, {minimumFractionDigits: d, maximumFractionDigits: d});
+const pct = (x, d = 1) => x == null ? "–" : (x > 0 ? "+" : "") + nf(x, d) + " %";
+const geld = x => {
+  if (x == null) return "–";
+  const a = Math.abs(x);
+  if (a >= 1e12) return nf(x / 1e12, 1) + " Bio €";
+  if (a >= 1e9) return nf(x / 1e9, a >= 1e11 ? 0 : 1) + " Mrd €";
+  if (a >= 1e6) return nf(x / 1e6, 0) + " Mio €";
+  return nf(x / 1e3, 0) + " Tsd €";
+};
+const usd = x => x == null ? "–" : (x >= 1e9 ? nf(x / 1e9, 1) + " Mrd $" : nf(x / 1e6, 0) + " Mio $");
+const stk = x => x == null ? "–" : x >= 1e6 ? nf(x / 1e6, 1) + " Mio" : x >= 1e3 ? nf(x / 1e3, 0) + " Tsd" : nf(x, 0);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("ar_" + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("ar_" + k, JSON.stringify(v)); } catch (e) {} }
+};
+const FLAG = {"USA":"🇺🇸","Deutschland":"🇩🇪","Österreich":"🇦🇹","Schweiz":"🇨🇭","Frankreich":"🇫🇷","Niederlande":"🇳🇱","Italien":"🇮🇹","Spanien":"🇪🇸","Großbritannien":"🇬🇧","Schweden":"🇸🇪","Dänemark":"🇩🇰","Norwegen":"🇳🇴","Finnland":"🇫🇮","Belgien":"🇧🇪","Zusatz":"➕"};
+const yahoo = s => "https://finance.yahoo.com/quote/" + encodeURIComponent(s);
+
+/* ---------- Zustand ---------- */
+const DEF = {markt: "Alle", kgv: 15, vol: 1.2, mk: 1, fonds: false, sort: "score"};
+let F = Object.assign({}, DEF, store.get("filter", {}));
+let D = null;                 // data.json
+let AKT = [];                 // Aktien mit berechneten Feldern
+let FONDS_BY_T = {};          // Ticker -> Fonds-Eintrag
+let shown = 40;
+let WL = store.get("watchlist", []);
+
+/* ---------- Daten laden ---------- */
+async function laden() {
+  try {
+    const r = await fetch("data.json?t=" + Date.now(), {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    D = await r.json();
+  } catch (e) {
+    D = null;
+    $("#stand").textContent = "keine Daten";
+    $("#liste").innerHTML = `<div class="note warn"><p><b>Noch keine Daten gefunden.</b></p>
+      <p>Die Datei <code>data.json</code> fehlt. Sie wird vom GitHub-Job „Daten aktualisieren“ erzeugt. Starte ihn einmal im Repository unter <b>Actions → Daten aktualisieren → Run workflow</b>. Nach ca. 5–10 Minuten ist sie da.</p>
+      <p>Hinweis: Die App funktioniert nur über die GitHub-Pages-Adresse, nicht als lokal geöffnete Datei.</p></div>`;
+    $("#count").textContent = "";
+    renderWL(); renderInfo();
+    return;
+  }
+  vorbereiten();
+  renderStand(); renderChips(); syncFilterUI(); render(); renderFonds(); renderWL(); renderInfo();
+}
+
+function vorbereiten() {
+  AKT = (D.aktien || []).map(a => Object.assign({}, a, {
+    vt: a.v10 && a.v3m ? a.v10 / a.v3m : null,
+    vh: a.v && a.v3m ? a.v / a.v3m : null
+  }));
+  FONDS_BY_T = {};
+  for (const e of (D.fonds && D.fonds.top) || []) if (e.t) FONDS_BY_T[e.t] = e;
+  // Score: Perzentil-Ränge über alle Aktien
+  const rang = (arr, key) => {
+    const vals = arr.map(a => a[key]).filter(v => v != null).sort((x, y) => x - y);
+    const n = vals.length;
+    return v => {
+      if (v == null || !n) return null;
+      let lo = 0, hi = n;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (vals[m] < v) lo = m + 1; else hi = m; }
+      return n > 1 ? lo / (n - 1) : .5;
+    };
+  };
+  const rK = rang(AKT, "kgv"), rV = rang(AKT, "vt");
+  for (const a of AKT) {
+    const f = FONDS_BY_T[a.s];
+    a.fn = f ? f.fonds.length : 0;
+    const pk = rK(a.kgv), pv = rV(a.vt);
+    a.score = Math.round(100 * (0.4 * (pk == null ? 0 : 1 - pk) + 0.4 * (pv == null ? 0 : pv) + 0.2 * Math.min(a.fn / 3, 1)));
+  }
+  const dl = $("#wl-dl");
+  dl.innerHTML = AKT.slice().sort((x, y) => (y.mk || 0) - (x.mk || 0)).slice(0, 1500)
+    .map(a => `<option value="${esc(a.s)}">${esc(a.n)}</option>`).join("");
+}
+
+function datum(iso) {
+  if (!iso) return "–";
+  const d = new Date(iso);
+  return d.toLocaleString(LOC, {weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+}
+function renderStand() {
+  const s = D.stand || {};
+  $("#stand").innerHTML = `Kurse: ${esc(datum(s.aktien))}`;
+  $("#hinweise").innerHTML = (D.hinweise || []).map(h => `<div class="note warn">${esc(h)}</div>`).join("");
+}
+
+/* ---------- Radar ---------- */
+function marktListe() {
+  const m = new Set(AKT.map(a => a.m));
+  const order = Object.keys(FLAG);
+  return ["Alle", "USA", "Europa", ...[...m].filter(x => x !== "USA").sort((a, b) => order.indexOf(a) - order.indexOf(b))];
+}
+function renderChips() {
+  $("#maerkte").innerHTML = marktListe().map(m =>
+    `<button class="chip ${F.markt === m ? "on" : ""}" data-m="${esc(m)}" type="button">${FLAG[m] ? FLAG[m] + " " : ""}${esc(m)}</button>`).join("");
+}
+function mkStufe(i) { return [0, .5, 1, 2, 5, 10, 20, 50, 100, 200, 500][i] || 0; }
+function mkIndex(v) { return Math.max(0, [0, .5, 1, 2, 5, 10, 20, 50, 100, 200, 500].indexOf(v)); }
+function syncFilterUI() {
+  $("#f-kgv").value = F.kgv; $("#f-vol").value = F.vol; $("#f-mk").value = mkIndex(F.mk);
+  $("#f-fonds").checked = F.fonds; $("#sort").value = F.sort;
+  filterLabels();
+}
+function filterLabels() {
+  $("#f-kgv-v").textContent = F.kgv >= 60 ? "egal" : "≤ " + F.kgv;
+  $("#f-vol-v").textContent = F.vol <= 0.5 ? "egal" : "≥ " + nf(F.vol, 2) + "×";
+  $("#f-mk-v").textContent = F.mk ? "≥ " + nf(F.mk, F.mk < 1 ? 1 : 0) + " Mrd €" : "egal";
+  const t = [];
+  if (F.kgv < 60) t.push("KGV ≤ " + F.kgv);
+  if (F.vol > 0.5) t.push("Vol ≥ " + nf(F.vol, 2) + "×");
+  if (F.mk) t.push("≥ " + nf(F.mk, F.mk < 1 ? 1 : 0) + " Mrd");
+  if (F.fonds) t.push("Fonds");
+  $("#fsum").textContent = t.join(" · ") || "keine";
+}
+function gefiltert() {
+  const q = $("#q").value.trim().toLowerCase();
+  let r = AKT.filter(a => {
+    if (F.markt === "Europa" && a.m === "USA") return false;
+    if (F.markt !== "Alle" && F.markt !== "Europa" && a.m !== F.markt) return false;
+    if (q) return a.s.toLowerCase().includes(q) || (a.n || "").toLowerCase().includes(q);
+    if (F.kgv < 60 && (a.kgv == null || a.kgv > F.kgv)) return false;
+    if (F.vol > 0.5 && (a.vt == null || a.vt < F.vol)) return false;
+    if (F.mk && (a.mk == null || a.mk < F.mk * 1e9)) return false;
+    if (F.fonds && !a.fn) return false;
+    return true;
+  });
+  const k = F.sort, desc = k !== "kgv";
+  r.sort((x, y) => {
+    const a = x[k], b = y[k];
+    if (a == null && b == null) return 0;
+    if (a == null) return 1; if (b == null) return -1;
+    return desc ? b - a : a - b;
+  });
+  return r;
+}
+function karte(a) {
+  const ch = a.c == null ? "" : `<span class="${a.c >= 0 ? "up" : "down"}">${pct(a.c)}</span>`;
+  const tags = [];
+  if (a.fn) tags.push(`<span class="tag fund">🏦 ${a.fn} Fonds kaufen</span>`);
+  if (a.vh != null && a.vh >= 2) tags.push(`<span class="tag acc">Volumen heute ${nf(a.vh, 1)}×</span>`);
+  if (a.kgv && a.fkgv && a.fkgv > a.kgv * 1.25) tags.push(`<span class="tag warn">Gewinnrückgang erwartet</span>`);
+  if (WL.some(w => w.s === a.s)) tags.push(`<span class="tag">★ Watchlist</span>`);
+  return `<div class="card" data-s="${esc(a.s)}">
+    <div class="top">
+      <div style="min-width:0"><div class="nm">${esc(a.n)}<span class="score num">${a.score}</span></div>
+      <div class="sub">${FLAG[a.m] || ""} ${esc(a.s)} · ${esc(a.b || "")}</div></div>
+      <div class="px num"><b>${nf(a.p)} ${esc(a.w)}</b>${ch}</div>
+    </div>
+    <div class="metrics num">
+      <div class="metric"><small>KGV</small><b>${nf(a.kgv, 1)}</b></div>
+      <div class="metric ${a.vt >= 1.3 ? "hot" : ""}"><small>Vol-Trend</small><b>${a.vt == null ? "–" : nf(a.vt, 2) + "×"}</b></div>
+      <div class="metric"><small>Umsatz/Tag</small><b>${geld(a.ums)}</b></div>
+      <div class="metric"><small>Börsenwert</small><b>${geld(a.mk)}</b></div>
+    </div>
+    ${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}
+  </div>`;
+}
+function render() {
+  if (!D) return;
+  const r = gefiltert();
+  $("#count").textContent = `${r.length.toLocaleString(LOC)} Treffer von ${AKT.length.toLocaleString(LOC)} Aktien`;
+  $("#liste").innerHTML = r.length ? r.slice(0, shown).map(karte).join("")
+    : `<div class="empty">Keine Aktie erfüllt alle Filter.<br>Lockere z. B. das KGV oder den Volumen-Trend.</div>`;
+  $("#mehr").hidden = r.length <= shown;
+}
+function speichern() { store.set("filter", F); filterLabels(); shown = 40; render(); }
+
+$("#maerkte").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  F.markt = b.dataset.m; renderChips(); speichern();
+});
+$("#f-kgv").addEventListener("input", e => { F.kgv = +e.target.value; speichern(); });
+$("#f-vol").addEventListener("input", e => { F.vol = +e.target.value; speichern(); });
+$("#f-mk").addEventListener("input", e => { F.mk = mkStufe(+e.target.value); speichern(); });
+$("#f-fonds").addEventListener("change", e => { F.fonds = e.target.checked; speichern(); });
+$("#sort").addEventListener("change", e => { F.sort = e.target.value; speichern(); });
+$("#f-reset").addEventListener("click", () => { F = Object.assign({}, DEF, {markt: F.markt}); syncFilterUI(); speichern(); });
+$("#q").addEventListener("input", () => { shown = 40; render(); });
+$("#mehr").addEventListener("click", () => { shown += 40; render(); });
+$("#liste").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) detail(c.dataset.s); });
+
+/* ---------- Detail ---------- */
+function detail(s) {
+  const a = AKT.find(x => x.s === s);
+  const f = FONDS_BY_T[s];
+  const inWL = WL.some(w => w.s === s);
+  let html;
+  if (!a) {
+    html = `<h3>${esc(s)}</h3><div class="note warn">Für diesen Ticker gibt es keine Kennzahlen in den Daten. Trage ihn in <code>config.json</code> unter <code>zusatz_ticker</code> ein, dann wird er beim nächsten Lauf mit geladen.</div>`;
+  } else {
+    let pos = null;
+    if (a.h52 && a.l52 && a.h52 > a.l52 && a.p) pos = Math.min(100, Math.max(0, (a.p - a.l52) / (a.h52 - a.l52) * 100));
+    html = `<h3>${esc(a.n)}</h3>
+      <div class="sub" style="color:var(--ink3);font-size:13px">${FLAG[a.m] || ""} ${esc(a.s)} · ${esc(a.b || "")} · Score ${a.score}</div>
+      <div class="kv num">
+        <div><small>Kurs</small><b>${nf(a.p)} ${esc(a.w)}</b> <span class="${a.c >= 0 ? "up" : "down"}">${pct(a.c)}</span></div>
+        <div><small>Börsenwert</small><b>${geld(a.mk)}</b></div>
+        <div><small>KGV (12 M)</small><b>${nf(a.kgv, 1)}</b></div>
+        <div><small>KGV erwartet</small><b>${nf(a.fkgv, 1)}</b></div>
+        <div><small>Kurs-Buchwert</small><b>${nf(a.kbv, 2)}</b></div>
+        <div><small>Dividendenrendite</small><b>${a.div == null ? "–" : nf(a.div, 2) + " %"}</b></div>
+        <div><small>Volumen-Trend 10T/3M</small><b>${a.vt == null ? "–" : nf(a.vt, 2) + "×"}</b></div>
+        <div><small>Volumen heute / Ø</small><b>${a.vh == null ? "–" : nf(a.vh, 2) + "×"}</b></div>
+        <div><small>Stück heute</small><b>${stk(a.v)}</b></div>
+        <div><small>Ø Umsatz/Tag</small><b>${geld(a.ums)}</b></div>
+      </div>
+      ${pos == null ? "" : `<h2>52-Wochen-Spanne ${a.p52 != null ? "· " + pct(a.p52) : ""}</h2>
+        <div class="range"><i style="left:${pos}%"></i></div>
+        <div class="range-l num"><span>${nf(a.l52)}</span><span>${nf(a.h52)}</span></div>`}`;
+  }
+  if (f) {
+    html += `<h2>Fondskäufe laut 13F</h2><div class="note">${f.fonds.map(x =>
+      `<div class="fund-row"><span>${esc(x.f)}</span><span class="num">${x.art === "neu" ? "neu" : "+" + nf(x.pct, 0) + " %"} · ${usd(x.plus)}</span></div>`).join("")}</div>`;
+  }
+  html += `<div class="btnrow">
+      <button class="btn ${inWL ? "sec" : ""}" id="d-wl" type="button">${inWL ? "★ In Watchlist" : "☆ Zur Watchlist"}</button>
+      <a class="btn sec" href="${yahoo(s)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">Yahoo Finance ↗</a>
+    </div>`;
+  $("#sheet-in").innerHTML = html;
+  $("#d-wl").onclick = () => { if (!WL.some(w => w.s === s)) { wlAdd(s); } zu(); tab("watch"); };
+  $("#sheet").classList.add("on"); $("#sheet-bg").classList.add("on");
+}
+function zu() { $("#sheet").classList.remove("on"); $("#sheet-bg").classList.remove("on"); }
+$("#sheet-bg").addEventListener("click", zu);
+(() => { // nach unten wischen schließt
+  let y0 = null; const sh = $("#sheet");
+  sh.addEventListener("touchstart", e => { y0 = sh.scrollTop <= 0 ? e.touches[0].clientY : null; }, {passive: true});
+  sh.addEventListener("touchend", e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 80) zu(); y0 = null; });
+})();
+
+/* ---------- Fonds ---------- */
+let fondsModus = "top";
+function renderFonds() {
+  const fd = (D && D.fonds) || {fonds: [], top: []};
+  const box = $("#fonds-liste");
+  if (!fd.fonds.length) {
+    $("#fonds-info").innerHTML = "Noch keine Fondsdaten. Prüfe, ob im Repository das Secret <code>SEC_KONTAKT</code> mit deiner E-Mail-Adresse angelegt ist – die SEC verlangt eine Kontaktadresse.";
+    box.innerHTML = ""; return;
+  }
+  const perioden = [...new Set(fd.fonds.map(f => f.periode))].sort().reverse();
+  const q = p => { const d = new Date(p); return "Q" + (Math.floor(d.getMonth() / 3) + 1) + " " + d.getFullYear(); };
+  $("#fonds-info").innerHTML = `<b>Stichtag ${esc(perioden.map(q).join(" / "))}</b> – verglichen mit dem Quartal davor. 13F-Meldungen sind bis zu 45 Tage alt: Das zeigt, was die Fonds <i>gekauft haben</i>, nicht was sie heute tun. ${fd.fonds.length} Fonds ausgewertet.`;
+  if (fondsModus === "top") {
+    box.innerHTML = `<div class="list">${fd.top.slice(0, 80).map(e => {
+      const a = e.t && AKT.find(x => x.s === e.t);
+      return `<div class="card" data-t="${esc(e.t || "")}">
+        <div class="top"><div style="min-width:0"><div class="nm">${esc(a ? a.n : e.name)}</div>
+          <div class="sub">${esc(e.t || "Ticker unbekannt")}${a ? " · KGV " + nf(a.kgv, 1) + " · Vol " + (a.vt ? nf(a.vt, 2) + "×" : "–") : ""}</div></div>
+          <div class="px num"><b>${e.fonds.length} Fonds</b><span style="color:var(--ink3);font-size:12px">${usd(e.plus)}</span></div></div>
+        <div style="margin-top:8px">${e.fonds.slice(0, 5).map(x => `<div class="fund-row"><span>${esc(x.f)}</span><span class="num">${x.art === "neu" ? "neu" : "+" + nf(x.pct, 0) + " %"}</span></div>`).join("")}${e.fonds.length > 5 ? `<div class="fund-row"><span style="color:var(--ink3)">+ ${e.fonds.length - 5} weitere – antippen</span><span></span></div>` : ""}</div>
+      </div>`; }).join("")}</div>`;
+  } else {
+    box.innerHTML = fd.fonds.map(f => `<details class="fonds">
+      <summary><div class="nm" style="font-weight:600">${esc(f.name)}</div>
+        <div class="sub" style="font-size:12px;color:var(--ink3)">${q(f.periode)} · ${f.positionen} Positionen · ${usd(f.volumen)} · ${f.kaeufe.length} Käufe</div></summary>
+      <div class="body">
+        <h4>Gekauft / aufgestockt</h4>
+        ${f.kaeufe.length ? f.kaeufe.slice(0, 25).map(k => `<div class="fund-row"><span>${k.t ? `<a class="lnk" data-t="${esc(k.t)}">${esc(k.t)}</a> · ` : ""}${esc(k.name)}</span><span class="num">${k.art === "neu" ? "neu" : "+" + nf(k.pct, 0) + " %"} · ${usd(k.plus)}</span></div>`).join("") : `<div class="sub">keine</div>`}
+        <h4>Komplett verkauft</h4>
+        ${f.verkaeufe.length ? f.verkaeufe.slice(0, 12).map(k => `<div class="fund-row"><span>${k.t ? esc(k.t) + " · " : ""}${esc(k.name)}</span><span class="num">${usd(k.wert)}</span></div>`).join("") : `<div class="sub">keine</div>`}
+      </div></details>`).join("");
+  }
+}
+$("#fseg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  fondsModus = b.dataset.m;
+  [...$("#fseg").children].forEach(x => x.classList.toggle("on", x === b));
+  renderFonds();
+});
+$("#fonds-liste").addEventListener("click", e => {
+  const el = e.target.closest("[data-t]");
+  if (el && el.dataset.t) detail(el.dataset.t);
+});
+
+/* ---------- Watchlist ---------- */
+function wlSave() { store.set("watchlist", WL); renderWL(); if (D) render(); }
+function wlAdd(s) {
+  s = s.trim().toUpperCase(); if (!s) return;
+  if (WL.some(w => w.s === s)) return;
+  WL.unshift({s, notiz: "", einstand: null, stueck: null, seit: new Date().toISOString().slice(0, 10)});
+  wlSave();
+}
+function renderWL() {
+  const box = $("#wl-liste");
+  if (!WL.length) {
+    box.innerHTML = `<div class="empty">Noch leer. Füge oben einen Ticker hinzu oder tippe im Radar auf eine Aktie → „Zur Watchlist“.</div>`;
+  } else {
+    box.innerHTML = WL.map((w, i) => {
+      const a = AKT.find(x => x.s === w.s);
+      let gv = "";
+      if (a && a.p && w.einstand) {
+        const d = (a.p / w.einstand - 1) * 100;
+        gv = `<span class="tag ${d >= 0 ? "acc" : "warn"} num">${pct(d)}${w.stueck ? " · " + nf((a.p - w.einstand) * w.stueck, 0) + " " + esc(a.w) : ""}</span>`;
+      }
+      return `<div class="card" data-i="${i}">
+        <div class="top" data-act="detail">
+          <div style="min-width:0"><div class="nm">${esc(a ? a.n : w.s)}${a ? `<span class="score num">${a.score}</span>` : ""}</div>
+          <div class="sub">${a ? (FLAG[a.m] || "") + " " : ""}${esc(w.s)}${a ? "" : " · keine Daten"}</div></div>
+          <div class="px num">${a ? `<b>${nf(a.p)} ${esc(a.w)}</b><span class="${a.c >= 0 ? "up" : "down"}">${pct(a.c)}</span>` : ""}</div>
+        </div>
+        ${a ? `<div class="metrics num">
+          <div class="metric"><small>KGV</small><b>${nf(a.kgv, 1)}</b></div>
+          <div class="metric ${a.vt >= 1.3 ? "hot" : ""}"><small>Vol-Trend</small><b>${a.vt == null ? "–" : nf(a.vt, 2) + "×"}</b></div>
+          <div class="metric"><small>Div.</small><b>${a.div == null ? "–" : nf(a.div, 1) + " %"}</b></div>
+          <div class="metric"><small>Fonds</small><b>${a.fn || "–"}</b></div></div>` : ""}
+        <div class="tags">${gv}${w.notiz ? `<span class="tag">📝 ${esc(w.notiz.length > 60 ? w.notiz.slice(0, 60) + "…" : w.notiz)}</span>` : ""}</div>
+        <details style="margin-top:6px"><summary style="font-size:13px;color:var(--ink3);cursor:pointer">Bearbeiten</summary>
+          <div class="wl-edit">
+            <label>Einstandskurs (${esc(a ? a.w : "")})<input type="number" inputmode="decimal" step="any" data-f="einstand" value="${w.einstand ?? ""}"></label>
+            <label>Stück<input type="number" inputmode="decimal" step="any" data-f="stueck" value="${w.stueck ?? ""}"></label>
+            <label class="full">Notiz<textarea rows="2" data-f="notiz">${esc(w.notiz)}</textarea></label>
+            <button class="btn danger full" type="button" data-act="del">Entfernen</button>
+          </div></details>
+      </div>`;
+    }).join("");
+  }
+  const b = store.get("backup", null);
+  $("#wl-backup-info").textContent = b ? "Letzte Sicherung: " + new Date(b).toLocaleString(LOC) : "Noch keine Sicherung erstellt.";
+}
+$("#wl-form").addEventListener("submit", e => { e.preventDefault(); wlAdd($("#wl-in").value); $("#wl-in").value = ""; });
+$("#wl-liste").addEventListener("click", e => {
+  const c = e.target.closest(".card"); if (!c) return;
+  const i = +c.dataset.i;
+  const act = e.target.closest("[data-act]");
+  if (act && act.dataset.act === "del") { if (confirm(WL[i].s + " aus der Watchlist entfernen?")) { WL.splice(i, 1); wlSave(); } return; }
+  if (act && act.dataset.act === "detail") detail(WL[i].s);
+});
+$("#wl-liste").addEventListener("change", e => {
+  const el = e.target.closest("[data-f]"); if (!el) return;
+  const i = +el.closest(".card").dataset.i, f = el.dataset.f;
+  WL[i][f] = f === "notiz" ? el.value : (el.value === "" ? null : parseFloat(String(el.value).replace(",", ".")));
+  wlSave();
+});
+$("#wl-export").addEventListener("click", async () => {
+  const daten = {app: "aktien-radar", version: 1, erstellt: new Date().toISOString(), watchlist: WL, filter: F};
+  const name = "aktien-radar-" + new Date().toISOString().slice(0, 10) + ".json";
+  const blob = new Blob([JSON.stringify(daten, null, 2)], {type: "application/json"});
+  try {
+    const file = new File([blob], name, {type: "application/json"});
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({files: [file], title: "Aktien-Radar Sicherung"});
+      store.set("backup", Date.now()); renderWL(); return;
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  store.set("backup", Date.now()); renderWL();
+});
+$("#wl-import-btn").addEventListener("click", () => $("#wl-import").click());
+$("#wl-import").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const d = JSON.parse(await file.text());
+    if (d.app !== "aktien-radar" || !Array.isArray(d.watchlist)) throw new Error("keine Aktien-Radar-Sicherung");
+    if (!confirm(`Sicherung vom ${new Date(d.erstellt).toLocaleString(LOC)} mit ${d.watchlist.length} Einträgen laden? Die aktuelle Watchlist wird ersetzt.`)) return;
+    WL = d.watchlist;
+    if (d.filter) { F = Object.assign({}, DEF, d.filter); store.set("filter", F); syncFilterUI(); renderChips(); }
+    wlSave();
+  } catch (err) { alert("Datei konnte nicht geladen werden: " + err.message); }
+  e.target.value = "";
+});
+
+/* ---------- Info ---------- */
+function renderInfo() {
+  if (!D) { $("#info-stand").innerHTML = "Noch keine Daten geladen."; return; }
+  const s = D.stand || {};
+  const nM = new Set(AKT.map(a => a.m)).size;
+  $("#info-stand").innerHTML = `<p>Kennzahlen: <b>${esc(datum(s.aktien))}</b> · ${AKT.length.toLocaleString(LOC)} Aktien aus ${nM} Märkten</p>
+    <p>Fondsmeldungen: <b>${esc(datum(s.fonds))}</b> · ${((D.fonds || {}).fonds || []).length} Fonds</p>
+    <p style="color:var(--ink3);font-size:13px">Aktualisierung automatisch Mo–Fr gegen 23:40 Uhr (Wien), nach US-Börsenschluss. Kurse sind Schlusskurse dieses Laufs.</p>`;
+}
+
+/* ---------- Tabs & Theme ---------- */
+function tab(v) {
+  document.querySelectorAll(".view").forEach(x => x.classList.toggle("on", x.id === "v-" + v));
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x.dataset.v === v));
+  window.scrollTo(0, 0);
+}
+$("#tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) tab(b.dataset.v); });
+function theme(t) {
+  if (t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll("#theme-seg button").forEach(x => x.classList.toggle("on", x.dataset.t === t));
+  store.set("theme", t);
+}
+$("#theme-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (b) theme(b.dataset.t); });
+theme(store.get("theme", "auto"));
+
+laden();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "sec_kontakt": "",
+
+  "maerkte": {
+    "USA":         {"boersen": ["NMS", "NYQ", "NGM", "NCM", "ASE"], "min_marktkap": 2000000000, "max_anzahl": 1000},
+    "Deutschland": {"boersen": ["GER"], "min_marktkap": 500000000, "max_anzahl": 250},
+    "Österreich":  {"boersen": ["VIE"], "min_marktkap": 200000000, "max_anzahl": 100},
+    "Schweiz":     {"boersen": ["EBS"], "min_marktkap": 500000000, "max_anzahl": 250},
+    "Frankreich":  {"boersen": ["PAR"], "min_marktkap": 500000000, "max_anzahl": 250},
+    "Niederlande": {"boersen": ["AMS"], "min_marktkap": 500000000, "max_anzahl": 150},
+    "Italien":     {"boersen": ["MIL"], "min_marktkap": 500000000, "max_anzahl": 200},
+    "Spanien":     {"boersen": ["MCE"], "min_marktkap": 500000000, "max_anzahl": 150},
+    "Großbritannien": {"boersen": ["LSE"], "min_marktkap": 500000000, "max_anzahl": 250},
+    "Schweden":    {"boersen": ["STO"], "min_marktkap": 5000000000, "max_anzahl": 200},
+    "Dänemark":    {"boersen": ["CPH"], "min_marktkap": 3000000000, "max_anzahl": 100},
+    "Norwegen":    {"boersen": ["OSL"], "min_marktkap": 5000000000, "max_anzahl": 100},
+    "Finnland":    {"boersen": ["HEL"], "min_marktkap": 500000000, "max_anzahl": 100},
+    "Belgien":     {"boersen": ["BRU"], "min_marktkap": 500000000, "max_anzahl": 100}
+  },
+
+  "zusatz_ticker": [],
+
+  "fonds": [
+    {"name": "Berkshire Hathaway (Buffett)", "cik": "1067983"},
+    {"name": "Pershing Square (Ackman)", "cik": "1336528"},
+    {"name": "Duquesne Family Office (Druckenmiller)", "cik": "1536411"},
+    {"name": "Appaloosa (Tepper)", "cik": "1656456"},
+    {"name": "Baupost Group (Klarman)", "cik": "1061768"},
+    {"name": "Third Point (Loeb)", "cik": "1040273"},
+    {"name": "Greenlight Capital (Einhorn)", "cik": "1079114"},
+    {"name": "Himalaya Capital (Li Lu)", "cik": "1709323"},
+    {"name": "Bridgewater Associates (Dalio)", "cik": "1350694"},
+    {"name": "Soros Fund Management", "cik": "1029160"},
+    {"name": "Tiger Global", "cik": "1167483"},
+    {"name": "Coatue Management", "cik": "1135730"},
+    {"name": "Lone Pine Capital", "cik": "1061165"},
+    {"name": "Viking Global", "cik": "1103804"},
+    {"name": "Akre Capital", "cik": "1112520"},
+    {"name": "Dodge & Cox", "cik": "200217"},
+    {"name": "Fundsmith (Terry Smith)", "cik": "1569205"},
+    {"name": "Gates Foundation Trust", "cik": "1166559"}
+  ]
+}
